@@ -28,10 +28,15 @@ class HTTPResult:
     content_length: int | None = None
     content_type: str | None = None
     redirect_url: str | None = None
+    final_domain: str | None = None  # Domain after redirects
     technologies: list[str] = field(default_factory=list)
     cdn: str | None = None
     is_cloudflare: bool = False
+    requires_login: bool = False  # Login page blocking access
+    is_parked: bool = False  # Parked/for-sale domain
+    is_redirected_external: bool = False  # Redirected to different domain
     is_accessible: bool = False
+    is_valid_target: bool = False  # Functional, public, not redirected
     error: str | None = None
     response_time_ms: int | None = None
     tool: str = "unknown"
@@ -46,10 +51,15 @@ class HTTPResult:
             "content_length": self.content_length,
             "content_type": self.content_type,
             "redirect_url": self.redirect_url,
+            "final_domain": self.final_domain,
             "technologies": self.technologies,
             "cdn": self.cdn,
             "is_cloudflare": self.is_cloudflare,
+            "requires_login": self.requires_login,
+            "is_parked": self.is_parked,
+            "is_redirected_external": self.is_redirected_external,
             "is_accessible": self.is_accessible,
+            "is_valid_target": self.is_valid_target,
             "error": self.error,
             "response_time_ms": self.response_time_ms,
             "tool": self.tool,
@@ -135,6 +145,83 @@ class CloudflareDetector:
         return False
 
 
+class LoginDetector:
+    """Detect login pages that block public access (basic detection)."""
+
+    def requires_login(
+        self,
+        title: str | None = None,
+        url: str | None = None,
+        status_code: int | None = None,
+    ) -> bool:
+        """
+        Basic login detection - only checks HTTP status codes.
+        More advanced detection will be added in PR #7.
+
+        Returns:
+            True if 401 Unauthorized.
+        """
+        # Only flag explicit 401 (Unauthorized)
+        # 403 could be many things, not just login
+        return status_code == 401
+
+
+class ParkedDomainDetector:
+    """Detect parked or for-sale domains (basic detection)."""
+
+    # Known parking service domains (redirect destinations)
+    PARKING_DOMAINS = [
+        "sedoparking.com", "parkingcrew.net", "bodis.com",
+        "hugedomains.com", "dan.com", "afternic.com",
+        "sav.com", "porkbun.com", "above.com",
+        "undeveloped.com", "domainmarket.com",
+    ]
+
+    def is_parked(
+        self,
+        title: str | None = None,
+        url: str | None = None,
+        redirect_url: str | None = None,
+    ) -> bool:
+        """
+        Basic parked domain detection - checks redirect to known parking services.
+        More advanced detection will be added in PR #7.
+
+        Returns:
+            True if redirected to known parking domain.
+        """
+        # Only check URLs, not titles (multilingual issues)
+        urls_to_check = [url, redirect_url]
+        for check_url in urls_to_check:
+            if check_url:
+                url_lower = check_url.lower()
+                for parking_domain in self.PARKING_DOMAINS:
+                    if parking_domain in url_lower:
+                        return True
+
+        return False
+
+
+def extract_domain_from_url(url: str) -> str | None:
+    """Extract domain from URL."""
+    if not url:
+        return None
+    match = re.match(r"https?://([^/:]+)", url)
+    return match.group(1) if match else None
+
+
+def is_same_domain(domain1: str, domain2: str) -> bool:
+    """Check if two domains are the same (ignoring www prefix)."""
+    if not domain1 or not domain2:
+        return False
+
+    # Normalize: remove www prefix and lowercase
+    d1 = domain1.lower().lstrip("www.")
+    d2 = domain2.lower().lstrip("www.")
+
+    return d1 == d2
+
+
 class HTTPXRunner:
     """Wrapper for httpx tool."""
 
@@ -148,6 +235,8 @@ class HTTPXRunner:
         self.cdn_detect = config.http.cdn_detect
         self.follow_redirects = config.http.follow_redirects
         self.cf_detector = CloudflareDetector()
+        self.login_detector = LoginDetector()
+        self.parked_detector = ParkedDomainDetector()
 
     def probe_domains(self, domains: list[str]) -> list[HTTPResult]:
         """
@@ -241,10 +330,11 @@ class HTTPXRunner:
         # Determine domain
         domain = input_domain
         if not domain and url:
-            # Extract from URL
-            match = re.match(r"https?://([^/:]+)", url)
-            if match:
-                domain = match.group(1)
+            domain = extract_domain_from_url(url)
+
+        # Get redirect/final URL
+        redirect_url = data.get("final_url") or data.get("location")
+        final_domain = extract_domain_from_url(redirect_url) if redirect_url else None
 
         # Get CDN info
         cdn = None
@@ -252,19 +342,39 @@ class HTTPXRunner:
         if cdn_data:
             cdn = cdn_data if isinstance(cdn_data, str) else str(cdn_data)
 
+        status_code = data.get("status_code")
+        title = data.get("title")
+
         # Check for Cloudflare
         is_cloudflare = self.cf_detector.is_cloudflare(
-            status_code=data.get("status_code"),
+            status_code=status_code,
             cdn=cdn,
         )
+
+        # Check for login requirement
+        requires_login = self.login_detector.requires_login(
+            title=title,
+            url=redirect_url or url,
+            status_code=status_code,
+        )
+
+        # Check for parked domain
+        is_parked = self.parked_detector.is_parked(
+            title=title,
+            url=url,
+            redirect_url=redirect_url,
+        )
+
+        # Check for external redirect (domain sold/transferred)
+        is_redirected_external = False
+        if final_domain and domain:
+            is_redirected_external = not is_same_domain(domain, final_domain)
 
         # Parse response time
         response_time = data.get("response_time")
         response_time_ms = None
         if response_time:
-            # Convert to ms if in different format
             if isinstance(response_time, str):
-                # Parse "123ms" or "1.5s" format
                 if response_time.endswith("ms"):
                     response_time_ms = int(float(response_time[:-2]))
                 elif response_time.endswith("s"):
@@ -277,20 +387,39 @@ class HTTPXRunner:
         if isinstance(tech, str):
             tech = [tech]
 
-        status_code = data.get("status_code")
+        # Calculate accessibility
+        is_accessible = status_code is not None and 200 <= status_code < 400
+
+        # Calculate if this is a valid target:
+        # - Accessible (200-399)
+        # - Not behind login
+        # - Not parked/for sale
+        # - Not redirected to different domain
+        # - Not behind Cloudflare protection (will be handled in bypass stage)
+        is_valid_target = (
+            is_accessible
+            and not requires_login
+            and not is_parked
+            and not is_redirected_external
+        )
 
         return HTTPResult(
             domain=domain,
             url=url,
             status_code=status_code,
-            title=data.get("title"),
+            title=title,
             content_length=data.get("content_length"),
             content_type=data.get("content_type"),
-            redirect_url=data.get("final_url") or data.get("location"),
+            redirect_url=redirect_url,
+            final_domain=final_domain,
             technologies=tech,
             cdn=cdn,
             is_cloudflare=is_cloudflare,
-            is_accessible=status_code is not None and 200 <= status_code < 400,
+            requires_login=requires_login,
+            is_parked=is_parked,
+            is_redirected_external=is_redirected_external,
+            is_accessible=is_accessible,
+            is_valid_target=is_valid_target,
             response_time_ms=response_time_ms,
             tool="httpx",
         )

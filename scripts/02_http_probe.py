@@ -87,7 +87,12 @@ def setup_output_dir(output_dir: Path) -> dict[str, Path]:
     return {
         "http_alive": output_dir / f"http_alive_{timestamp}.txt",
         "http_alive_json": output_dir / f"http_alive_{timestamp}.json",
+        "valid_targets": output_dir / f"valid_targets_{timestamp}.txt",
+        "valid_targets_json": output_dir / f"valid_targets_{timestamp}.json",
         "cloudflare_detected": output_dir / f"cloudflare_detected_{timestamp}.txt",
+        "login_required": output_dir / f"login_required_{timestamp}.txt",
+        "parked_domains": output_dir / f"parked_domains_{timestamp}.txt",
+        "redirected_external": output_dir / f"redirected_external_{timestamp}.txt",
         "http_errors": output_dir / f"http_errors_{timestamp}.txt",
         "full_results": output_dir / f"http_results_{timestamp}.json",
         "summary": output_dir / f"summary_{timestamp}.json",
@@ -107,6 +112,25 @@ def write_result(result: HTTPResult, files: dict[str, Path], handles: dict) -> N
     if result.is_accessible:
         handles["http_alive"].write(result.domain + "\n")
         handles["http_alive_json"].write(json.dumps(result.to_dict()) + "\n")
+
+    # Valid targets (functional, public, not redirected)
+    if result.is_valid_target:
+        handles["valid_targets"].write(result.domain + "\n")
+        handles["valid_targets_json"].write(json.dumps(result.to_dict()) + "\n")
+
+    # Login required
+    if result.requires_login:
+        handles["login_required"].write(f"{result.domain}\t{result.title or ''}\n")
+
+    # Parked domains
+    if result.is_parked:
+        handles["parked_domains"].write(f"{result.domain}\t{result.title or ''}\n")
+
+    # Redirected to external domain
+    if result.is_redirected_external:
+        handles["redirected_external"].write(
+            f"{result.domain}\t{result.final_domain}\t{result.redirect_url or ''}\n"
+        )
 
     # Cloudflare protected
     if result.is_cloudflare:
@@ -164,7 +188,11 @@ def run_http_probe(
         "total": total_domains,
         "processed": 0,
         "accessible": 0,
+        "valid_targets": 0,
         "cloudflare": 0,
+        "login_required": 0,
+        "parked": 0,
+        "redirected_external": 0,
         "errors": 0,
         "status_codes": {},
         "start_time": datetime.now().isoformat(),

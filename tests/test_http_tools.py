@@ -132,6 +132,40 @@ class TestCloudflareDetector:
         ) is False
 
 
+class TestLoginDetector:
+    """Tests for LoginDetector class."""
+
+    def test_detect_401(self):
+        """Test detection of 401 Unauthorized."""
+        from scripts.utils.http_tools import LoginDetector
+        detector = LoginDetector()
+
+        assert detector.requires_login(status_code=401) is True
+        assert detector.requires_login(status_code=403) is False
+        assert detector.requires_login(status_code=200) is False
+
+
+class TestParkedDomainDetector:
+    """Tests for ParkedDomainDetector class."""
+
+    def test_detect_parking_redirect(self):
+        """Test detection of redirect to parking service."""
+        from scripts.utils.http_tools import ParkedDomainDetector
+        detector = ParkedDomainDetector()
+
+        assert detector.is_parked(redirect_url="https://sedoparking.com/abc") is True
+        assert detector.is_parked(redirect_url="https://dan.com/buy/example") is True
+        assert detector.is_parked(redirect_url="https://google.com") is False
+
+    def test_no_false_positives(self):
+        """Test no false positives on normal domains."""
+        from scripts.utils.http_tools import ParkedDomainDetector
+        detector = ParkedDomainDetector()
+
+        assert detector.is_parked(url="https://example.com") is False
+        assert detector.is_parked(url="https://github.com") is False
+
+
 class TestCheckToolAvailable:
     """Tests for check_tool_available function."""
 
