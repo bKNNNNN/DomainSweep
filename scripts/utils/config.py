@@ -60,6 +60,11 @@ class BypassConfig(BaseModel):
     impersonate: str = "chrome"
     flaresolverr_url: str = "http://localhost:8191/v1"
     output_dir: str = "output/03_bypass_results"
+    # Proxy settings
+    use_proxies: bool = False
+    residential_proxy: str = ""
+    max_free_proxies: int = Field(default=50, ge=0, le=500)
+    validate_proxies: bool = True
 
 
 class CloudflareConfig(BaseModel):
