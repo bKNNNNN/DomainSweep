@@ -1,0 +1,191 @@
+# =============================================================================
+# Domain Accessibility Checker - Configuration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# General Settings
+# -----------------------------------------------------------------------------
+general:
+  # Input file containing domains (one per line)
+  input_file: "input/domains.txt"
+
+  # Chunk size for processing large files (never load all in memory)
+  chunk_size: 100000
+
+  # Enable resume from checkpoint after crash/interrupt
+  enable_resume: true
+
+  # State file for resume functionality
+  state_file: "tmp/pipeline_state.json"
+
+# -----------------------------------------------------------------------------
+# DNS Check Settings (Stage 1)
+# -----------------------------------------------------------------------------
+dns:
+  # Number of concurrent threads
+  threads: 300
+
+  # Timeout per request (seconds)
+  timeout: 3
+
+  # Retry settings
+  max_retries: 3
+  retry_delay: 1
+
+  # DNS resolvers file
+  resolvers_file: "input/resolvers.txt"
+
+  # Record types to check
+  check_mx: true
+  check_a: true
+
+  # Primary tool: dnsx, massdns, or zdns
+  primary_tool: "dnsx"
+
+  # Enable fallback to alternative tools
+  enable_fallback: true
+
+  # Output directory
+  output_dir: "output/01_dns_results"
+
+# -----------------------------------------------------------------------------
+# HTTP Probe Settings (Stage 2)
+# -----------------------------------------------------------------------------
+http:
+  # Number of concurrent threads
+  threads: 200
+
+  # Timeout per request (seconds)
+  timeout: 5
+
+  # Max redirects to follow
+  max_redirects: 5
+
+  # Retry settings
+  max_retries: 2
+  retry_delay: 1
+
+  # Ports to probe
+  ports:
+    - 80
+    - 443
+
+  # Primary tool: httpx or httprobe
+  primary_tool: "httpx"
+
+  # Enable tech detection (slower but more info)
+  tech_detect: true
+
+  # Enable CDN detection
+  cdn_detect: true
+
+  # Follow redirects and capture final URL
+  follow_redirects: true
+
+  # Store redirect chain (original → final URL)
+  store_redirect_chain: true
+
+  # Output directory
+  output_dir: "output/02_http_results"
+
+# -----------------------------------------------------------------------------
+# Cloudflare Bypass Settings (Stage 3)
+# -----------------------------------------------------------------------------
+bypass:
+  # Number of concurrent threads (lower for bypass)
+  threads: 100
+
+  # Timeout per request (seconds) - higher for JS challenges
+  timeout: 15
+
+  # Retry settings
+  max_retries: 3
+  retry_delay: 2
+
+  # Primary tool: curl_cffi, flaresolverr, or cloudscraper
+  primary_tool: "curl_cffi"
+
+  # Enable fallback to alternative tools
+  enable_fallback: true
+
+  # Browser to impersonate (for curl_cffi)
+  impersonate: "chrome"
+
+  # FlareSolverr URL (if using flaresolverr)
+  flaresolverr_url: "http://localhost:8191/v1"
+
+  # Output directory
+  output_dir: "output/03_bypass_results"
+
+# -----------------------------------------------------------------------------
+# Cloudflare Detection Indicators
+# -----------------------------------------------------------------------------
+cloudflare:
+  # Response headers indicating Cloudflare
+  headers:
+    - "cf-ray"
+    - "cf-cache-status"
+    - "cf-request-id"
+
+  # Response body patterns
+  body_patterns:
+    - "cloudflare"
+    - "challenge-platform"
+    - "cf-browser-verification"
+    - "Checking your browser"
+    - "DDoS protection by"
+
+  # Status codes that might indicate challenge
+  challenge_codes:
+    - 403
+    - 503
+
+# -----------------------------------------------------------------------------
+# Output Settings
+# -----------------------------------------------------------------------------
+output:
+  # Generate JSON output
+  json: true
+
+  # Generate CSV output
+  csv: true
+
+  # Final output directory
+  final_dir: "output/final"
+
+  # Include metadata in output (timestamps, tool versions, etc.)
+  include_metadata: true
+
+# -----------------------------------------------------------------------------
+# Logging Settings
+# -----------------------------------------------------------------------------
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Log directory
+  dir: "logs"
+
+  # Log to console
+  console: true
+
+  # Log to file
+  file: true
+
+  # Max log file size (MB) before rotation
+  max_size_mb: 100
+
+  # Number of backup logs to keep
+  backup_count: 5
+
+# -----------------------------------------------------------------------------
+# Rate Limiting (to avoid being blocked)
+# -----------------------------------------------------------------------------
+rate_limit:
+  # Max requests per second (0 = unlimited)
+  dns_rps: 0
+  http_rps: 0
+  bypass_rps: 50
+
+  # Per-IP rate limiting for HTTP
+  per_ip_delay_ms: 100

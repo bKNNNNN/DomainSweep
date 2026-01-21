@@ -1,0 +1,104 @@
+# =============================================================================
+# Domain Accessibility Checker - Git Ignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# -----------------------------------------------------------------------------
+# IDE
+# -----------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# -----------------------------------------------------------------------------
+# OS
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# -----------------------------------------------------------------------------
+# Project specific
+# -----------------------------------------------------------------------------
+
+# Input files (user provides their own)
+input/*.txt
+input/*.csv
+!input/.gitkeep
+
+# Output files (generated)
+output/01_dns_results/*
+output/02_http_results/*
+output/03_bypass_results/*
+output/final/*
+!output/**/.gitkeep
+
+# Logs
+logs/*.log
+logs/*.json
+!logs/.gitkeep
+
+# Temporary files
+tmp/*
+!tmp/.gitkeep
+
+# State files
+*.state
+pipeline_state.json
+
+# Large data files
+*.gz
+*.zip
+*.tar
+*.7z
+
+# Massdns binary (compiled locally)
+bin/massdns
+
+# -----------------------------------------------------------------------------
+# Secrets (NEVER commit these)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+secrets.yaml
+credentials.json

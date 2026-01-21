@@ -1,0 +1,38 @@
+# Domain Accessibility Checker - Python Dependencies
+
+# HTTP requests with TLS fingerprint bypass
+curl_cffi>=0.5.10
+
+# Cloudflare bypass alternatives
+cloudscraper>=1.2.71
+
+# Configuration
+pyyaml>=6.0.1
+
+# Progress bars
+tqdm>=4.66.1
+
+# CSV processing
+csvkit>=1.4.0
+
+# Async support
+aiofiles>=23.2.1
+aiodns>=3.1.1
+
+# Data validation
+pydantic>=2.5.0
+
+# CLI colors
+colorama>=0.4.6
+
+# JSON processing
+orjson>=3.9.10
+
+# Rate limiting
+ratelimit>=2.2.1
+
+# Retry logic
+tenacity>=8.2.3
+
+# DNS utilities
+dnspython>=2.4.2
