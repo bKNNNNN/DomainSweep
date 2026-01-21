@@ -1,6 +1,6 @@
 """
 HTTP probing tools for domain accessibility checking.
-Supports httpx (primary) and httprobe as fallback.
+Supports httpx-pd (primary) and httprobe as fallback.
 Includes Cloudflare detection.
 """
 
@@ -82,7 +82,7 @@ def check_tool_available(tool: str) -> bool:
 def get_available_tools() -> list[str]:
     """Get list of available HTTP tools."""
     tools = []
-    for tool in ["httpx", "httprobe"]:
+    for tool in ["httpx-pd", "httprobe"]:
         if check_tool_available(tool):
             tools.append(tool)
     return tools
@@ -112,7 +112,7 @@ class CloudflareDetector:
             headers: Response headers dict.
             body: Response body text.
             status_code: HTTP status code.
-            cdn: CDN detected by httpx.
+            cdn: CDN detected by httpx-pd.
 
         Returns:
             True if Cloudflare protection detected.
@@ -223,10 +223,10 @@ def is_same_domain(domain1: str, domain2: str) -> bool:
 
 
 class HTTPXRunner:
-    """Wrapper for httpx tool."""
+    """Wrapper for httpx-pd tool."""
 
     def __init__(self):
-        """Initialize httpx runner."""
+        """Initialize httpx-pd runner."""
         config = get_config()
         self.threads = config.http.threads
         self.timeout = config.http.timeout
@@ -240,7 +240,7 @@ class HTTPXRunner:
 
     def probe_domains(self, domains: list[str]) -> list[HTTPResult]:
         """
-        Probe multiple domains using httpx.
+        Probe multiple domains using httpx-pd.
 
         Args:
             domains: List of domains to probe.
@@ -260,7 +260,7 @@ class HTTPXRunner:
 
         try:
             cmd = [
-                "httpx",
+                "httpx-pd",
                 "-l", input_file,
                 "-silent",
                 "-json",
@@ -303,9 +303,9 @@ class HTTPXRunner:
                     continue
 
         except subprocess.TimeoutExpired:
-            logger.error("httpx timeout expired")
+            logger.error("httpx-pd timeout expired")
         except Exception as e:
-            logger.error(f"httpx error: {e}")
+            logger.error(f"httpx-pd error: {e}")
         finally:
             Path(input_file).unlink(missing_ok=True)
 
@@ -316,13 +316,13 @@ class HTTPXRunner:
                     domain=domain,
                     is_accessible=False,
                     error="No response",
-                    tool="httpx",
+                    tool="httpx-pd",
                 )
 
         return list(results.values())
 
     def _parse_httpx_json(self, data: dict) -> HTTPResult:
-        """Parse httpx JSON output into HTTPResult."""
+        """Parse httpx-pd JSON output into HTTPResult."""
         # Extract domain from URL
         url = data.get("url", "")
         input_domain = data.get("input", "")
@@ -421,7 +421,7 @@ class HTTPXRunner:
             is_accessible=is_accessible,
             is_valid_target=is_valid_target,
             response_time_ms=response_time_ms,
-            tool="httpx",
+            tool="httpx-pd",
         )
 
 
@@ -525,13 +525,13 @@ class HTTPProber:
 
         # Initialize runners
         self.runners = {}
-        if check_tool_available("httpx"):
-            self.runners["httpx"] = HTTPXRunner()
+        if check_tool_available("httpx-pd"):
+            self.runners["httpx-pd"] = HTTPXRunner()
         if check_tool_available("httprobe"):
             self.runners["httprobe"] = HTTPProbeRunner()
 
         if not self.runners:
-            raise RuntimeError("No HTTP tools available. Install httpx or httprobe.")
+            raise RuntimeError("No HTTP tools available. Install httpx-pd or httprobe.")
 
         logger.info(f"HTTP prober initialized with tools: {list(self.runners.keys())}")
 

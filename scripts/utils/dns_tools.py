@@ -143,7 +143,6 @@ class DNSXRunner:
                 "-resp",
                 "-silent",
                 "-t", str(self.threads),
-                "-timeout", str(self.timeout),
             ]
 
             if self.resolvers_file and Path(self.resolvers_file).exists():
@@ -156,19 +155,32 @@ class DNSXRunner:
                 timeout=300,  # 5 min max
             )
 
-            # Parse output: domain [record1,record2,...]
-            for line in result.stdout.strip().split("\n"):
+            # Parse output: domain [TYPE] [record1,record2,...] (with ANSI codes)
+            # Remove ANSI color codes first
+            import re
+            ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+            clean_output = ansi_escape.sub('', result.stdout)
+
+            for line in clean_output.strip().split("\n"):
+                line = line.strip()
                 if not line:
                     continue
 
+                # Format: domain [A] [ip1,ip2] or domain [MX] [mx1,mx2]
                 parts = line.split(" [")
-                if len(parts) >= 2:
+                if len(parts) >= 3:
+                    # domain [TYPE] [records]
                     domain = parts[0].strip()
-                    records_str = parts[1].rstrip("]")
+                    records_str = parts[2].strip().rstrip("]").strip()
                     records = [r.strip() for r in records_str.split(",") if r.strip()]
                     results[domain] = records
+                elif len(parts) == 2:
+                    # domain [TYPE] - no records returned
+                    domain = parts[0].strip()
+                    if domain:
+                        results[domain] = []
                 elif parts:
-                    # Domain only, no records in response format
+                    # Domain only
                     domain = parts[0].strip()
                     if domain:
                         results[domain] = []
