@@ -1,4 +1,4 @@
-.PHONY: install install-go-tools install-python test clean run-dns run-http run-bypass run-all help
+.PHONY: install install-go-tools install-python test test-unit test-cov clean run-dns run-http run-bypass run-all help
 
 # Colors for output
 GREEN := \033[0;32m
@@ -21,8 +21,12 @@ help:
 	@echo "    make run-bypass       - Run Cloudflare bypass (stage 3)"
 	@echo "    make run-all          - Run full pipeline"
 	@echo ""
-	@echo "  $(YELLOW)Utils:$(NC)"
+	@echo "  $(YELLOW)Testing:$(NC)"
 	@echo "    make test             - Test all tools are installed"
+	@echo "    make test-unit        - Run unit tests (pytest)"
+	@echo "    make test-cov         - Run tests with coverage report"
+	@echo ""
+	@echo "  $(YELLOW)Utils:$(NC)"
 	@echo "    make clean            - Clean temporary files"
 	@echo "    make reset            - Reset all outputs (keep inputs)"
 	@echo ""
@@ -68,6 +72,18 @@ test:
 	@echo "Quick functional test:"
 	@echo "google.com" | dnsx -a -silent >/dev/null 2>&1 && echo "  $(GREEN)✓ dnsx can resolve domains$(NC)" || echo "  $(RED)✗ dnsx test failed$(NC)"
 	@echo "https://google.com" | httpx -silent -status-code 2>/dev/null | grep -q "200" && echo "  $(GREEN)✓ httpx can probe HTTP$(NC)" || echo "  $(RED)✗ httpx test failed$(NC)"
+
+# Run unit tests
+test-unit:
+	@echo "$(YELLOW)Running unit tests...$(NC)"
+	python3 -m pytest tests/ -v --tb=short
+	@echo "$(GREEN)✓ Tests complete$(NC)"
+
+# Run tests with coverage
+test-cov:
+	@echo "$(YELLOW)Running tests with coverage...$(NC)"
+	python3 -m pytest tests/ -v --cov=scripts --cov-report=term-missing --cov-report=html
+	@echo "$(GREEN)✓ Coverage report generated in htmlcov/$(NC)"
 
 # Run DNS check
 run-dns:
