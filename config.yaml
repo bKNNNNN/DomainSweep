@@ -117,6 +117,17 @@ bypass:
   # Output directory
   output_dir: "output/03_bypass_results"
 
+  # Proxy settings for bypass
+  use_proxies: false  # Enable proxy rotation
+
+  # Residential proxy (optional - leave empty if not using)
+  # Format: "provider:username:password" or full URL
+  residential_proxy: ""
+
+  # Free proxy settings
+  max_free_proxies: 50  # Max free proxies to fetch
+  validate_proxies: true  # Validate proxies before use
+
 # -----------------------------------------------------------------------------
 # Cloudflare Detection Indicators
 # -----------------------------------------------------------------------------
