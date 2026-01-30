@@ -1,6 +1,6 @@
-# CLAUDE.md
+# CLAUDE.md - DomainSweep
 
-> Guide for building a mass domain accessibility checker (6M+ domains)
+> Guide for DomainSweep - Mass domain accessibility checker (6M+ domains)
 
 ## Project Overview
 

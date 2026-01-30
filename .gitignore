@@ -63,6 +63,7 @@ Thumbs.db
 input/*.txt
 input/*.csv
 !input/.gitkeep
+!input/sample_domains.txt
 
 # Output files (generated)
 output/01_dns_results/*

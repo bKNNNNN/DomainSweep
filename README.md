@@ -1,6 +1,17 @@
-# Domain Accessibility Checker
+# DomainSweep
 
-> Mass domain accessibility checker for 6M+ domains using a funnel approach.
+> Sweep through millions of domains - Mass domain accessibility checker using a funnel approach.
+
+## Disclaimer
+
+This tool is provided for **educational and authorized security research purposes only**.
+
+- The author is **not responsible** for any misuse of this software
+- Users are solely responsible for ensuring compliance with applicable laws
+- Only scan domains you own or have explicit permission to test
+- Unauthorized scanning may violate computer crime laws in your jurisdiction
+
+By using this software, you agree to use it responsibly and legally.
 
 ## Overview
 
@@ -36,8 +47,8 @@ make run-all
 
 ```bash
 # Clone the repo
-git clone <repo-url>
-cd domain-checker
+git clone https://github.com/bKNNNNN/DomainSweep
+cd DomainSweep
 
 # Install everything
 make install
@@ -120,6 +131,32 @@ output/
 
 *Only for Cloudflare-detected subset
 
+## Troubleshooting
+
+### DNS Stage
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Very slow DNS resolution | Bad resolvers | Use `input/resolvers.txt` with verified fast resolvers |
+| Many SERVFAIL errors | Resolver overload | Reduce `dns_threads` in config.yaml |
+| Connection refused | Firewall blocking port 53 | Check firewall rules, try different network |
+
+### HTTP Stage
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Too many timeouts | Threads too high | Reduce `http_threads` to 100 |
+| SSL certificate errors | Self-signed certs | Normal - domains are logged separately |
+| Memory usage high | Large result files | Reduce `chunk_size` in config.yaml |
+
+### General
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "command not found" | Tools not installed | Run `make install` |
+| Permission denied | Missing execute permission | Run `chmod +x scripts/*.py` |
+| Process killed | Out of memory | Use a VPS with more RAM or reduce threads |
+
 ## Tools Used
 
 | Category | Primary | Fallbacks |
@@ -130,4 +167,4 @@ output/
 
 ## License
 
-MIT
+MIT - See [LICENSE](LICENSE) for details.
