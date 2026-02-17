@@ -327,5 +327,15 @@ tail -f logs/*.log | grep -i error
 
 ---
 
+## Workflow
+
+- **Branch**: `<type>/<issue-number>-<description>` from `main`
+- **Commit**: `<type>: <description>` (English, lowercase, max 72 chars)
+- **PR**: Link with `Closes #XX`, squash merge, delete branch
+- **Board**: Issues tracked in GitHub Project "claude-apps"
+- **Labels**: `/setup-labels` to configure, `type/*` + `size/*` required per issue
+
+---
+
 *This file is part of Claude's prompt. Iterate and refine it as issues are encountered.*
 *Press `#` during coding to add instructions automatically.*
